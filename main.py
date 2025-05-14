@@ -200,6 +200,18 @@ def summary_command(update: Update, context: CallbackContext):
             msg += f"{sym[:-4]}: {price_text}\n"
     update.message.reply_text(msg)
 
+def send_prices_regularly():
+    msg = "💰 Регулярное обновление цен:\n"
+    for sym in COINS:
+        close, _ = get_ohlcv(sym)
+        if close:
+            price = close[-1]
+            if price >= 0.01:
+                price_text = f"${price:.2f}"
+            else:
+                price_text = f"${price:.8f}"
+            msg += f"{sym[:-4]}: {price_text}\n"
+    bot.send_message(chat_id=CHAT_ID, text=msg)
 
 def topgainer_command(update: Update, context: CallbackContext):
     changes = []
@@ -237,6 +249,7 @@ def main():
 
     scheduler = BackgroundScheduler(timezone=pytz.utc)
     scheduler.add_job(analyze, 'interval', minutes=2)
+    scheduler.add_job(send_prices_regularly, 'interval', minutes=14)
     scheduler.start()
 
     PORT = int(os.environ.get("PORT", 8080))
