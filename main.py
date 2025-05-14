@@ -258,6 +258,19 @@ def main():
 
     print("🟢 Бот запущен через Webhook")
 
+from flask import Flask
+
+# Простой веб-сервер только для healthcheck
+app = Flask(__name__)
+
+@app.route('/healthz')
+def health():
+    return "OK", 200
+
+import threading
+threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080)).start()
+
+
     # 🔁 Держим процесс активным
     updater.idle()  # <--- ОБЯЗАТЕЛЬНО
 
