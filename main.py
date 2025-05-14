@@ -35,7 +35,7 @@ bot = Bot(token=BOT_TOKEN)
 
 def get_ohlcv(symbol):
     try:
-        url = f"https://api.binance.com/api/v3/klines"
+        url = "https://api.binance.com/api/v3/klines"
         params = {
             "symbol": symbol,
             "interval": "1h",
@@ -43,8 +43,10 @@ def get_ohlcv(symbol):
         }
         headers = {"User-Agent": "Mozilla/5.0"}
         res = requests.get(url, params=params, headers=headers)
+        print(f"[DEBUG] Request URL: {res.url}")
+        print(f"[DEBUG] Status Code: {res.status_code}")
         if res.status_code != 200:
-            raise Exception(f"Bad response: {res.status_code}")
+            raise Exception(f"Bad response: {res.status_code} — {res.text}")
         data = res.json()
         close_prices = [float(candle[4]) for candle in data]
         volumes = [float(candle[5]) for candle in data]
@@ -52,6 +54,7 @@ def get_ohlcv(symbol):
     except Exception as e:
         print(f"[get_ohlcv] Ошибка (Binance): {e}")
         return [], []
+
 
 def ema(data, period):
     return np.convolve(data, np.ones(period) / period, mode='valid')[-1] if len(data) >= period else data[-1]
