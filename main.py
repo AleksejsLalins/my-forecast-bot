@@ -5,6 +5,9 @@ from datetime import datetime
 from telegram import Bot, Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import numpy as np
+import hmac
+import hashlib
+import os
 
 BOT_TOKEN = "8038821776:AAG2LFhNwJDX6tOJJsrvu9bFOQZRijbrDx8"
 CHAT_ID = "6413269307"
@@ -32,14 +35,6 @@ LOG_FILE = "log.txt"
 
 bot = Bot(token=BOT_TOKEN)
 
-import hmac
-import hashlib
-import os
-
-API_KEY = "KsWP1CcH9ZHUqJT2GM"
-API_SECRET = "RamnzVXx0vvwPWvZXWnpVP71zb5OzFOWdCNd"
-
-
 def get_ohlcv(symbol):
     coingecko_id = COINS.get(symbol)
     if not coingecko_id:
@@ -61,44 +56,8 @@ def get_ohlcv(symbol):
         print(f"[get_ohlcv] Ошибка (CoinGecko): {e}")
         return [], []
 
-    url = f"https://api.coinpaprika.com/v1/coins/{paprika_id}/ohlcv/historical"
-    params = {
-        "start":
-        (datetime.utcnow() - timedelta(hours=50)).strftime("%Y-%m-%d"),
-        "interval": "1h",
-        "limit": 50
-    }
-
-    try:
-        res = requests.get(url, params=params)
-        if res.status_code != 200:
-            raise Exception(f"Bad response: {res.status_code}")
-        data = res.json()
-        close_prices = [item['close'] for item in data[-50:]]
-        volumes = [item['volume'] for item in data[-50:]]
-        return close_prices, volumes
-    except Exception as e:
-        print(f"[get_ohlcv] Ошибка (Paprika): {e}")
-        return [], []
-
-    try:
-        url = f"https://api.coingecko.com/api/v3/coins/{coingecko_id}/market_chart?vs_currency=usd&days=1&interval=hourly"
-        res = requests.get(url)
-        if res.status_code != 200:
-            raise Exception(f"Bad response: {res.status_code}")
-        data = res.json()
-        prices = [price[1] for price in data['prices'][-50:]]
-        volumes = [vol[1] for vol in data['total_volumes'][-50:]]
-        return prices, volumes
-    except Exception as e:
-        print(f"[get_ohlcv] Ошибка (CoinGecko): {e}")
-        return [], []
-
-
 def ema(data, period):
-    return np.convolve(data, np.ones(period) / period,
-                       mode='valid')[-1] if len(data) >= period else data[-1]
-
+    return np.convolve(data, np.ones(period) / period, mode='valid')[-1] if len(data) >= period else data[-1]
 
 def rsi(prices, period=14):
     if len(prices) < period + 1:
@@ -115,7 +74,6 @@ def rsi(prices, period=14):
     rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
 
-
 def load_buy_prices():
     try:
         with open(BUY_PRICES_FILE, 'r') as f:
@@ -123,16 +81,13 @@ def load_buy_prices():
     except:
         return {}
 
-
 def save_buy_prices(data):
     with open(BUY_PRICES_FILE, 'w') as f:
         json.dump(data, f)
 
-
 def log_action(message):
     with open(LOG_FILE, 'a') as f:
         f.write(f"{datetime.now().isoformat()} - {message}\n")
-
 
 def get_crypto_news():
     url = f"https://cryptopanic.com/api/v1/posts/?auth_token={CRYPTO_PANIC_KEY}&kind=news&public=true"
@@ -140,20 +95,13 @@ def get_crypto_news():
         response = requests.get(url)
         data = response.json()
         headlines = [x['title'].lower() for x in data['results'][:10]]
-        negative_keywords = [
-            'hack', 'lawsuit', 'scam', 'ban', 'arrest', 'exploit'
-        ]
-        positive_keywords = [
-            'partnership', 'adoption', 'surge', 'bullish', 'growth'
-        ]
-        negative_hits = sum(
-            any(k in h for k in negative_keywords) for h in headlines)
-        positive_hits = sum(
-            any(k in h for k in positive_keywords) for h in headlines)
+        negative_keywords = ['hack', 'lawsuit', 'scam', 'ban', 'arrest', 'exploit']
+        positive_keywords = ['partnership', 'adoption', 'surge', 'bullish', 'growth']
+        negative_hits = sum(any(k in h for k in negative_keywords) for h in headlines)
+        positive_hits = sum(any(k in h for k in positive_keywords) for h in headlines)
         return positive_hits, negative_hits
     except:
         return 0, 0
-
 
 def analyze():
     buy_prices = load_buy_prices()
@@ -165,11 +113,7 @@ def analyze():
     skip_signals = btc_ema20 < btc_ema50
     pos_news, neg_news = get_crypto_news()
     if neg_news > pos_news:
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=
-            "📰 Обнаружены негативные новости — сигналы временно приостановлены"
-        )
+        bot.send_message(chat_id=CHAT_ID, text="📰 Обнаружены негативные новости — сигналы временно приостановлены")
         skip_signals = True
 
     for symbol in COINS:
@@ -202,10 +146,9 @@ def analyze():
             if symbol not in buy_prices:
                 buy_prices[symbol] = price
                 save_buy_prices(buy_prices)
-                msg = (
-                    f"🟢 Сигнал на ПОКУПКУ {symbol}: ${price:.2f}\n"
-                    f"EMA20>EMA50, RSI={rsi_val:.1f}, объём выше нормы\n"
-                    f"BTC-тренд: Восходящий, Новости: 👍{pos_news} 👎{neg_news}")
+                msg = (f"🟢 Сигнал на ПОКУПКУ {symbol}: ${price:.2f}\n"
+                       f"EMA20>EMA50, RSI={rsi_val:.1f}, объём выше нормы\n"
+                       f"BTC-тренд: Восходящий, Новости: 👍{pos_news} 👎{neg_news}")
                 bot.send_message(chat_id=CHAT_ID, text=msg)
                 log_action(msg)
 
@@ -218,7 +161,6 @@ def analyze():
                 del buy_prices[symbol]
                 save_buy_prices(buy_prices)
 
-
 def price_command(update: Update, context: CallbackContext):
     symbol = (context.args[0].upper() + "USDT") if context.args else "BTCUSDT"
     if symbol not in COINS:
@@ -229,7 +171,6 @@ def price_command(update: Update, context: CallbackContext):
         update.message.reply_text("Данные недоступны")
     else:
         update.message.reply_text(f"Цена {symbol[:-4]}: ${close[-1]:.2f}")
-
 
 def status_command(update: Update, context: CallbackContext):
     buy_prices = load_buy_prices()
@@ -248,12 +189,10 @@ def status_command(update: Update, context: CallbackContext):
         msg += f"{sym[:-4]}: {status}\n"
     update.message.reply_text(msg)
 
-
 def reset_command(update: Update, context: CallbackContext):
     save_buy_prices({})
     update.message.reply_text("✅ Все buy цены сброшены.")
     log_action("[RESET] Все buy цены сброшены пользователем.")
-
 
 def summary_command(update: Update, context: CallbackContext):
     msg = "💰 Текущие цены:\n"
@@ -262,7 +201,6 @@ def summary_command(update: Update, context: CallbackContext):
         if close:
             msg += f"{sym[:-4]}: ${close[-1]:.2f}\n"
     update.message.reply_text(msg)
-
 
 def topgainer_command(update: Update, context: CallbackContext):
     top_symbol = ""
@@ -276,11 +214,9 @@ def topgainer_command(update: Update, context: CallbackContext):
             top_growth = growth
             top_symbol = sym
     if top_symbol:
-        update.message.reply_text(
-            f"🚀 Топ-гейнер за 24ч: {top_symbol[:-4]} +{top_growth:.2f}%")
+        update.message.reply_text(f"🚀 Топ-гейнер за 24ч: {top_symbol[:-4]} +{top_growth:.2f}%")
     else:
         update.message.reply_text("Не удалось определить лидера роста")
-
 
 def help_command(update: Update, context: CallbackContext):
     help_text = ("🤖 Доступные команды:\n"
@@ -292,7 +228,6 @@ def help_command(update: Update, context: CallbackContext):
                  "/help — список всех команд")
     update.message.reply_text(help_text)
 
-
 def main():
     updater = Updater(token=BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -303,15 +238,15 @@ def main():
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
 
+    PORT = int(os.environ.get("PORT", 8443))
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=BOT_TOKEN,
+        webhook_url=f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}/{BOT_TOKEN}"
+    )
 
-    print("🟢 Бот запущен, стартуем polling")  # ← добавь эту строку
-
-    updater.start_polling()
-
-    while True:
-        analyze()
-        time.sleep(120)
-
+    print("🟢 Бот запущен через Webhook")
 
 if __name__ == '__main__':
     main()
