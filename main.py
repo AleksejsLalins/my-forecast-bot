@@ -231,18 +231,18 @@ def help_command(update: Update, context: CallbackContext):
     update.message.reply_text(help_text)
 
 
-from flask import Flask
-import threading
+# from flask import Flask
+# import threading
 
-# Простой веб-сервер только для healthcheck
-app = Flask(__name__)
+# # Простой веб-сервер только для healthcheck
+# app = Flask(__name__)
 
-@app.route('/healthz')
-def health():
-    return "OK", 200
+# @app.route('/healthz')
+# def health():
+#     return "OK", 200
 
-def run_flask():
-    app.run(host="0.0.0.0", port=8080)
+# def run_flask():
+#     app.run(host="0.0.0.0", port=8080)
 
 def main():
     updater = Updater(token=BOT_TOKEN, use_context=True)
@@ -272,8 +272,8 @@ def main():
 
     print("🟢 Бот запущен через Webhook")
 
-    # ✅ Запуск Flask-сервера в отдельном потоке
-    threading.Thread(target=run_flask).start()
+    # # ✅ Запуск Flask-сервера в отдельном потоке
+    # threading.Thread(target=run_flask).start()
 
     # 🔁 Поддерживаем работу Telegram
     updater.idle()
