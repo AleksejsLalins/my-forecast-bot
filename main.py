@@ -7,6 +7,8 @@ import numpy as np
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
+from flask import Flask
+import threading
 
 BOT_TOKEN = "8038821776:AAG2LFhNwJDX6tOJJsrvu9bFOQZRijbrDx8"
 CHAT_ID = "6413269307"
@@ -33,6 +35,15 @@ SIGNALS_SENT = set()
 LOG_FILE = "log.txt"
 
 bot = Bot(token=BOT_TOKEN)
+
+app = Flask(__name__)
+
+@app.route("/healthz")
+def health():
+    return "OK", 200
+
+def run_healthcheck():
+    app.run(host="0.0.0.0", port=8081)
 
 def get_ohlcv(symbol):
     try:
@@ -253,6 +264,9 @@ def main():
     scheduler.add_job(analyze, 'interval', minutes=2)
     scheduler.add_job(send_prices_regularly, 'interval', minutes=14)
     scheduler.start()
+
+    # 🔁 Запускаем healthcheck-сервер
+    threading.Thread(target=run_healthcheck).start()
 
     PORT = int(os.environ.get("PORT", 8080))
     updater.start_webhook(
