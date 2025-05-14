@@ -36,24 +36,23 @@ LOG_FILE = "log.txt"
 bot = Bot(token=BOT_TOKEN)
 
 def get_ohlcv(symbol):
-    coingecko_id = COINS.get(symbol)
-    if not coingecko_id:
-        print(f"Монета {symbol} не найдена в COINS")
-        return [], []
-
     try:
-        url = f"https://api.coingecko.com/api/v3/coins/{coingecko_id}/market_chart"
-        params = {"vs_currency": "usd", "days": "1", "interval": "hourly"}
+        url = f"https://api.binance.com/api/v3/klines"
+        params = {
+            "symbol": symbol,
+            "interval": "1h",
+            "limit": 50
+        }
         headers = {"User-Agent": "Mozilla/5.0"}
         res = requests.get(url, params=params, headers=headers)
         if res.status_code != 200:
             raise Exception(f"Bad response: {res.status_code}")
         data = res.json()
-        prices = [price[1] for price in data['prices'][-50:]]
-        volumes = [vol[1] for vol in data['total_volumes'][-50:]]
-        return prices, volumes
+        close_prices = [float(candle[4]) for candle in data]
+        volumes = [float(candle[5]) for candle in data]
+        return close_prices, volumes
     except Exception as e:
-        print(f"[get_ohlcv] Ошибка (CoinGecko): {e}")
+        print(f"[get_ohlcv] Ошибка (Binance): {e}")
         return [], []
 
 def ema(data, period):
