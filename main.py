@@ -234,6 +234,7 @@ def main():
     updater = Updater(token=BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
 
+    # Команды Telegram
     dp.add_handler(CommandHandler("price", price_command))
     dp.add_handler(CommandHandler("status", status_command))
     dp.add_handler(CommandHandler("reset", reset_command))
@@ -241,12 +242,12 @@ def main():
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
 
-    # ✅ Планировщик с pytz UTC
+    # ✅ Планировщик (фон)
     scheduler = BackgroundScheduler(timezone=pytz.utc)
     scheduler.add_job(analyze, 'interval', minutes=2)
     scheduler.start()
 
-    # ✅ Вебхук
+    # ✅ Webhook (Render)
     PORT = int(os.environ.get("PORT", 8443))
     updater.start_webhook(
         listen="0.0.0.0",
