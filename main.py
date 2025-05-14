@@ -230,6 +230,20 @@ def help_command(update: Update, context: CallbackContext):
                  "/help — список всех команд")
     update.message.reply_text(help_text)
 
+
+from flask import Flask
+import threading
+
+# Простой веб-сервер только для healthcheck
+app = Flask(__name__)
+
+@app.route('/healthz')
+def health():
+    return "OK", 200
+
+def run_flask():
+    app.run(host="0.0.0.0", port=8080)
+
 def main():
     updater = Updater(token=BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -242,13 +256,13 @@ def main():
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
 
-    # ✅ Планировщик (фон)
+    # ✅ Планировщик
     scheduler = BackgroundScheduler(timezone=pytz.utc)
     scheduler.add_job(analyze, 'interval', minutes=2)
     scheduler.start()
 
-    # ✅ Webhook (Render)
-    PORT = int(os.environ.get("PORT", 8443))
+    # ✅ Webhook
+    PORT = int(os.environ.get("PORT", 8080))
     updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
@@ -258,19 +272,12 @@ def main():
 
     print("🟢 Бот запущен через Webhook")
 
-from flask import Flask
+    # ✅ Запуск Flask-сервера в отдельном потоке
+    threading.Thread(target=run_flask).start()
 
-# Простой веб-сервер только для healthcheck
-app = Flask(__name__)
-
-@app.route('/healthz')
-def health():
-    return "OK", 200
-
-import threading
-threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080)).start()
+    # 🔁 Поддерживаем работу Telegram
+    updater.idle()
 
 
-    # 🔁 Держим процесс активным
-    updater.idle()  # <--- ОБЯЗАТЕЛЬНО
-
+if __name__ == '__main__':
+    main()
