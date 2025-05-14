@@ -302,6 +302,10 @@ def main():
     dp.add_handler(CommandHandler("summary", summary_command))
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
+
+
+    print("🟢 Бот запущен, стартуем polling")  # ← добавь эту строку
+
     updater.start_polling()
 
     while True:
