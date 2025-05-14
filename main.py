@@ -54,8 +54,11 @@ def get_ohlcv(symbol):
         volumes = [float(candle[5]) for candle in data]
         return close_prices, volumes
     except Exception as e:
-        print(f"[get_ohlcv] Ошибка (Binance): {e}")
-        return [], []
+    error_msg = f"[get_ohlcv] Ошибка (Binance): {e}"
+    print(error_msg)
+    bot.send_message(chat_id=CHAT_ID, text=error_msg)  # 🔧 добавь эту строку
+    return [], []
+
 
 
 def ema(data, period):
