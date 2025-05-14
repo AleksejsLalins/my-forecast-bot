@@ -140,7 +140,16 @@ def price_command(update: Update, context: CallbackContext):
         update.message.reply_text("Монета не найдена")
         return
     close, _ = get_ohlcv(symbol)
-    update.message.reply_text(f"Цена {symbol[:-4]}: ${close[-1]:.2f}" if close else "Данные недоступны")
+    
+    if close:
+        price = close[-1]
+        if price >= 0.01:
+            price_text = f"${price:.2f}"
+        else:
+            price_text = f"${price:.8f}"
+        update.message.reply_text(f"Цена {symbol[:-4]}: {price_text}")
+    else:
+        update.message.reply_text("Данные недоступны")
 
 def status_command(update: Update, context: CallbackContext):
     msg = "📊 Статус монет (оценка):\n"
@@ -179,12 +188,18 @@ def status_command(update: Update, context: CallbackContext):
     update.message.reply_text(msg)
 
 def summary_command(update: Update, context: CallbackContext):
-    msg = "💰 Цены монет:\n"
+    msg = "💰 Текущие цены:\n"
     for sym in COINS:
         close, _ = get_ohlcv(sym)
         if close:
-            msg += f"{sym[:-4]}: ${close[-1]:.2f}\n"
+            price = close[-1]
+            if price >= 0.01:
+                price_text = f"${price:.2f}"
+            else:
+                price_text = f"${price:.8f}"
+            msg += f"{sym[:-4]}: {price_text}\n"
     update.message.reply_text(msg)
+
 
 def topgainer_command(update: Update, context: CallbackContext):
     changes = []
