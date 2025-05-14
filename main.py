@@ -6,6 +6,8 @@ from telegram import Bot, Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import numpy as np
 import os
+from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 
 BOT_TOKEN = "8038821776:AAG2LFhNwJDX6tOJJsrvu9bFOQZRijbrDx8"
 CHAT_ID = "6413269307"
@@ -239,13 +241,12 @@ def main():
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
 
-    # Запуск планировщика
-    from apscheduler.schedulers.background import BackgroundScheduler
-    scheduler = BackgroundScheduler()
+    # ✅ Планировщик с pytz UTC
+    scheduler = BackgroundScheduler(timezone=pytz.utc)
     scheduler.add_job(analyze, 'interval', minutes=2)
     scheduler.start()
 
-    # Старт вебхука
+    # ✅ Вебхук
     PORT = int(os.environ.get("PORT", 8443))
     updater.start_webhook(
         listen="0.0.0.0",
@@ -256,7 +257,6 @@ def main():
 
     print("🟢 Бот запущен через Webhook")
 
+    # 🔁 Держим процесс активным
+    updater.idle()  # <--- ОБЯЗАТЕЛЬНО
 
-
-if __name__ == '__main__':
-    main()
