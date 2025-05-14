@@ -237,6 +237,9 @@ def main():
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
 
+    job_queue = updater.job_queue
+    job_queue.run_repeating(lambda context: analyze(), interval=120, first=5)
+
     PORT = int(os.environ.get("PORT", 8443))
     updater.start_webhook(
         listen="0.0.0.0",
@@ -246,6 +249,7 @@ def main():
     )
 
     print("🟢 Бот запущен через Webhook")
+
 
 if __name__ == '__main__':
     main()
