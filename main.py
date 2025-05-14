@@ -231,6 +231,7 @@ def help_command(update: Update, context: CallbackContext):
 def main():
     updater = Updater(token=BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
+
     dp.add_handler(CommandHandler("price", price_command))
     dp.add_handler(CommandHandler("status", status_command))
     dp.add_handler(CommandHandler("reset", reset_command))
@@ -238,9 +239,13 @@ def main():
     dp.add_handler(CommandHandler("topgainer", topgainer_command))
     dp.add_handler(CommandHandler("help", help_command))
 
-    job_queue = updater.job_queue
-    job_queue.run_repeating(lambda context: analyze(), interval=120, first=5)
+    # Запуск планировщика
+    from apscheduler.schedulers.background import BackgroundScheduler
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(analyze, 'interval', minutes=2)
+    scheduler.start()
 
+    # Старт вебхука
     PORT = int(os.environ.get("PORT", 8443))
     updater.start_webhook(
         listen="0.0.0.0",
@@ -250,6 +255,7 @@ def main():
     )
 
     print("🟢 Бот запущен через Webhook")
+
 
 
 if __name__ == '__main__':
