@@ -123,13 +123,15 @@ def analyze():
         confidence = (score / 7) * 100
 
         if confidence >= 75 and f"BUY_{sym}" not in SIGNALS_SENT:
-            msg = f"🟢 Сигнал на покупку {sym}: ${price:.2f}\nУверенность: {confidence:.1f}%"
+            price_text = f"${price:.2f}" if price >= 0.01 else f"${price:.8f}"
+            msg = f"🟢 Сигнал на покупку {sym}: {price_text}\nУверенность: {confidence:.1f}%"
             bot.send_message(chat_id=CHAT_ID, text=msg)
             SIGNALS_SENT.add(f"BUY_{sym}")
             log_action(msg)
 
         if rsi_val > 70 and ema20_val < ema50_val and f"SELL_{sym}" not in SIGNALS_SENT:
-            msg = f"🔴 Сигнал на продажу {sym}: ${price:.2f}\nУверенность: 80%+ (перекупленность, пересечение EMA)"
+            price_text = f"${price:.2f}" if price >= 0.01 else f"${price:.8f}"
+            msg = f"🔴 Сигнал на продажу {sym}: {price_text}\nУверенность: 80%+ (перекупленность, пересечение EMA)"
             bot.send_message(chat_id=CHAT_ID, text=msg)
             SIGNALS_SENT.add(f"SELL_{sym}")
             log_action(msg)
