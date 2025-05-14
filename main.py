@@ -5,8 +5,6 @@ from datetime import datetime
 from telegram import Bot, Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import numpy as np
-import hmac
-import hashlib
 import os
 
 BOT_TOKEN = "8038821776:AAG2LFhNwJDX6tOJJsrvu9bFOQZRijbrDx8"
